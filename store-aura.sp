@@ -48,7 +48,7 @@ public Plugin myinfo =
 	author = PLUGIN_AUTHOR,
 	description = "Particle effects on players for store",
 	version = PLUGIN_VERSION,
-	url = "www.xenogamers.com"
+	url = "https://github.com/bbennett905/store-aura/"
 };
 
 public void OnPluginStart()

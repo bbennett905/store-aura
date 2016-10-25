@@ -36,4 +36,4 @@ Building this plugin requires [CEntity and CCSPlayer methodmaps](https://bitbuck
 
 ## Help! ##
 
-If you have a problem with Store or Sourcemod in general, please ask someone else. If you have a problem or request directly relating to this plugin, ask on the thread for this plugin on alliedmodders.
+If you have a problem with Store or Sourcemod in general, please ask someone else. If you have a problem or request directly relating to this plugin, message me.
