@@ -29,7 +29,11 @@ Items are added just like any other items. There are 4 attributes each item can 
 
 * material2 - **[OPTIONAL]** See above. Used if a particle system has 2 custom materials. *Ex: "material2":"materials/material2path.vmt"*
 
+## For devs ##
 
-### Help! ###
+Building this plugin requires [CEntity and CCSPlayer methodmaps](https://bitbucket.org/LeToucan/centity). You could also easily modify it to no longer require it, if you so desire.
+
+
+## Help! ##
 
 If you have a problem with Store or Sourcemod in general, please ask someone else. If you have a problem or request directly relating to this plugin, ask on the thread for this plugin on alliedmodders.
