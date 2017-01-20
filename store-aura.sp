@@ -1,13 +1,13 @@
 #pragma semicolon 1
 
 #define PLUGIN_AUTHOR "Lithium"
-#define PLUGIN_VERSION "1.3.3"
+#define PLUGIN_VERSION "1.4.0"
 
 #include <sourcemod>
 #include <sdktools>
 #include <store>
 #include <smjansson>
-#include <ccsplayer>
+#include <cbaseplayer>
 #include <sdkhooks>
 #include <cookie>
 
@@ -192,7 +192,7 @@ public void OnMapStart()
 
 public void Event_PlayerSpawn(Event hEvent, const char[] sName, bool bDontBroadcast)
 {
-	CCSPlayer pClient = CCSPlayer.FromEvent(hEvent, "userid");
+	CBasePlayer pClient = CBasePlayer.FromEvent(hEvent, "userid");
 
 	//If they had one equipped but didn't die, kill it
 	RemoveParticlesFromPlayer(pClient.Index);
@@ -204,7 +204,7 @@ public void Event_PlayerSpawn(Event hEvent, const char[] sName, bool bDontBroadc
 								 pClient);
 }
 
-public void OnGetPlayerAura(int[] iItemIDs, int iCount, CCSPlayer pClient)
+public void OnGetPlayerAura(int[] iItemIDs, int iCount, CBasePlayer pClient)
 {	
 	if (iCount > 0)
 	{
@@ -226,7 +226,7 @@ public void OnGetPlayerAura(int[] iItemIDs, int iCount, CCSPlayer pClient)
 
 public void Event_PlayerDeath(Event hEvent, const char[] sName, bool bDontBroadcast)
 {
-	CCSPlayer pClient = CCSPlayer.FromEvent(hEvent, "userid");
+	CBasePlayer pClient = CBasePlayer.FromEvent(hEvent, "userid");
 	
 	//Kill the particle system when the player dies
 	RemoveParticlesFromPlayer(pClient.Index);
@@ -436,16 +436,17 @@ public void SetFlags(int iEdict)
 
 public Action OnSetTransmit(int iEnt, int iClient)
 {
-	CCSPlayer pOwner = CCSPlayer(CEntity.FromIndex(iEnt).Owner.Index);
+	CBasePlayer pOwner = CBasePlayer(CEntity.FromIndex(iEnt).Owner.Index);
 	SetFlags(iEnt);
-	if(!pOwner.IsNull && pOwner.InGame)
+	if (!pOwner.IsNull && pOwner.InGame)
 	{
 		if (g_iVisibility[iClient] == 0) return Plugin_Stop;
 		if (g_iVisibility[iClient] == 2 && pOwner.Index != iClient) return Plugin_Stop;
 		if (g_hVisibleToTeamOnly.IntValue == 0) return Plugin_Continue;
 
-		int iTeam = CCSPlayer(iClient).Team;
-		if(iTeam == CS_TEAM_SPECTATOR || iTeam == pOwner.Team) return Plugin_Continue;
+		int iTeam = CBasePlayer(iClient).Team;
+		//TODO is spec same for cs and tf2
+		if (iTeam == CS_TEAM_SPECTATOR || iTeam == pOwner.Team) return Plugin_Continue;
 
 		return Plugin_Stop;
 	}
