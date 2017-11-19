@@ -1,7 +1,7 @@
 #pragma semicolon 1
 
 #define PLUGIN_AUTHOR "Lithium"
-#define PLUGIN_VERSION "1.4.0"
+#define PLUGIN_VERSION "1.5.0"
 
 #include <sourcemod>
 #include <sdktools>
@@ -16,12 +16,12 @@
 #define MAX_EFFECT_NAME_LENGTH 64
 
 /*
- *	Auras have 2-4 json attributes. Format:
+ *	Auras have 1-4 json attributes. Format:
  *	--------------------------------------------------------
- *	"file":"particlesname.pcf"					[REQUIRED]
- *			Do not include the "particles/" in this path.
  * 	"effect":"effectname"						[REQUIRED]
  *			Name of the effect, within the specified pcf, to use.
+ *  "file":"particlesname.pcf"					[OPTIONAL]
+ * 			Do not include the"particles/"in this path. Only necessary with custom effects.
  *	"material":"materials/materialpath.vmt"		[OPTIONAL] 
  *			ALWAYS include "materials/" in these paths.
  *	"material2":"materials/materialpath2.vmt"	[OPTIONAL]
@@ -259,26 +259,13 @@ public void LoadItem(const char[] sItemName, const char[] sAttrs)
 	if (hJson == null)
 	{
 		LogError("%s Error loading item attributes - '%s'", STORE_PREFIX, sItemName);
-		delete hJson;
+		//delete hJson;
 		return;
 	}
 	
 	char sInfo[PLATFORM_MAX_PATH];
-	json_object_get_string(hJson, "file", sInfo, sizeof(sInfo));
-	if(strlen(sInfo) == 0)
-	{
-		LogError("%s Required attribute 'file' not found! - '%s'", STORE_PREFIX, sItemName);
-		delete hJson;
-		return;
-	}
-	if (g_hParticleFiles.FindString(sInfo) == -1)
-	{
-		g_hParticleFiles.PushString(sInfo);					//file name
-		g_iFileCount++;
-	}
-	
-	json_object_get_string(hJson, "effect", sInfo, sizeof(sInfo));
-	if(strlen(sInfo) == 0)
+	int ret = json_object_get_string(hJson, "effect", sInfo, sizeof(sInfo));
+	if (ret == -1 || strlen(sInfo) == 0)
 	{
 		LogError("%s Required attribute 'effect' not found! - '%s'", STORE_PREFIX, sItemName);
 		delete hJson;
@@ -287,6 +274,23 @@ public void LoadItem(const char[] sItemName, const char[] sAttrs)
 	g_hAuraEffects.PushString(sInfo);						//effect name
 	g_iAuraCount++;
 	
+	//This way of doing this is really terrible
+	if (json_object_size(hJson) == 1)
+	{
+		delete hJson;
+		return;
+	}
+	
+	json_object_get_string(hJson, "file", sInfo, sizeof(sInfo));
+	if (strlen(sInfo) != 0)
+	{
+		if (g_hParticleFiles.FindString(sInfo) == -1)
+		{
+			g_hParticleFiles.PushString(sInfo);					//file name
+			g_iFileCount++;
+		}
+	}
+	
 	if (json_object_size(hJson) == 2)
 	{
 		delete hJson;
@@ -294,7 +298,7 @@ public void LoadItem(const char[] sItemName, const char[] sAttrs)
 	}
 		
 	json_object_get_string(hJson, "material", sInfo, sizeof(sInfo));
-	if(strlen(sInfo) != 0)
+	if (strlen(sInfo) != 0)
 	{
 		if (g_hMaterialFiles.FindString(sInfo) == -1)
 		{
@@ -445,7 +449,7 @@ public Action OnSetTransmit(int iEnt, int iClient)
 		if (g_hVisibleToTeamOnly.IntValue == 0) return Plugin_Continue;
 
 		int iTeam = CBasePlayer(iClient).Team;
-		//TODO is spec same for cs and tf2
+		//Spec should be same for CS and TF2
 		if (iTeam == CS_TEAM_SPECTATOR || iTeam == pOwner.Team) return Plugin_Continue;
 
 		return Plugin_Stop;
