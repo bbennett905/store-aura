@@ -36,6 +36,8 @@ Items are added just like any other items. There are 4 attributes each item can 
 
 * material2 - **[OPTIONAL]** See above. Used if a particle system has 2 custom materials. *Ex: "material2":"materials/material2path.vmt"*
 
+* model - **[OPTIONAL]** See above. Used if a particle system requires a model. Will also look for a .vvd and .dx90.vtx file in the same path with the same name. *Ex: "model":"models/modelpath.mdl"*
+
 ## For devs ##
 
 Building this plugin requires [CEntity and CBasePlayer methodmaps](https://bitbucket.org/LeToucan/centity). You could also easily modify it to no longer require it, if you so desire.

@@ -1,7 +1,7 @@
 #pragma semicolon 1
 
 #define PLUGIN_AUTHOR "Lithium"
-#define PLUGIN_VERSION "1.5.0"
+#define PLUGIN_VERSION "1.6.0"
 
 #include <sourcemod>
 #include <sdktools>
@@ -16,16 +16,19 @@
 #define MAX_EFFECT_NAME_LENGTH 64
 
 /*
- *	Auras have 1-4 json attributes. Format:
+ *	Auras have 1-5 json attributes. Format:
  *	--------------------------------------------------------
  * 	"effect":"effectname"						[REQUIRED]
  *			Name of the effect, within the specified pcf, to use.
  *  "file":"particlesname.pcf"					[OPTIONAL]
- * 			Do not include the"particles/"in this path. Only necessary with custom effects.
+ * 			Do not include the "particles/" in this path. Only necessary with custom effects.
  *	"material":"materials/materialpath.vmt"		[OPTIONAL] 
- *			ALWAYS include "materials/" in these paths.
+ *			ALWAYS include "materials/" in these paths. Also looks for the corresponding .vtf file.
  *	"material2":"materials/materialpath2.vmt"	[OPTIONAL]
- *			ALWAYS include "materials/" in these paths.
+ *			ALWAYS include "materials/" in these paths. Also looks for the corresponding .vtf file.
+ *	"model":"models/modelpath.mdl"				[OPTIONAL]
+ *			ALWAYS include "models/" in this path. 
+ *			Also looks for the corresponding .vvd and .dx90.vtx files.
  */
  
 ConVar g_hVisibleToTeamOnly;
@@ -35,12 +38,14 @@ int g_iVisibility[MAXPLAYERS + 1] = {1, 0};	// 0: Never show, 1: Always show, 2:
 int g_iAuraCount;
 int g_iFileCount;
 int g_iMaterialCount;
+int g_iModelCount;
 int g_iEquippedEntityIndex[MAXPLAYERS + 1];
 
 StringMap g_hAuraNameIndex;
 ArrayList g_hAuraEffects;
 ArrayList g_hParticleFiles;
 ArrayList g_hMaterialFiles;
+ArrayList g_hModelFiles;
 
 public Plugin myinfo = 
 {
@@ -79,6 +84,7 @@ public void OnPluginStart()
 	g_hParticleFiles = new ArrayList(PLATFORM_MAX_PATH);
 	g_hAuraEffects = new ArrayList(MAX_EFFECT_NAME_LENGTH);
 	g_hMaterialFiles = new ArrayList(PLATFORM_MAX_PATH);
+	g_hModelFiles = new ArrayList(PLATFORM_MAX_PATH);
 	g_hAuraNameIndex = new StringMap();
 	
 	Store_RegisterItemType("auras", OnEquip, LoadItem);
@@ -188,6 +194,19 @@ public void OnMapStart()
 		ReplaceString(sBuffer, sizeof(sBuffer), ".vmt", ".vtf", false);
 		AddFileToDownloadsTable(sBuffer);
 	}
+	
+	for (int i = 0; i < g_iModelCount; i++)
+	{
+		char sBuffer[PLATFORM_MAX_PATH];
+		g_hModelFiles.GetString(i, sBuffer, sizeof(sBuffer));
+		AddFileToDownloadsTable(sBuffer);
+		
+		ReplaceString(sBuffer, sizeof(sBuffer), ".mdl", ".vvd", false);
+		AddFileToDownloadsTable(sBuffer);
+		
+		ReplaceString(sBuffer, sizeof(sBuffer), ".vvd", ".dx90.vtx", false);
+		AddFileToDownloadsTable(sBuffer);
+	}
 }
 
 public void Event_PlayerSpawn(Event hEvent, const char[] sName, bool bDontBroadcast)
@@ -249,17 +268,17 @@ public void Store_OnReloadItems()
 	g_iAuraCount = 0;
 	g_iFileCount = 0;
 	g_iMaterialCount = 0;
+	g_iModelCount = 0;
 }
 
 public void LoadItem(const char[] sItemName, const char[] sAttrs)
 {
 	g_hAuraNameIndex.SetValue(sItemName, g_iAuraCount);		//item name
-
+	
 	Handle hJson = json_load(sAttrs);
 	if (hJson == null)
 	{
 		LogError("%s Error loading item attributes - '%s'", STORE_PREFIX, sItemName);
-		//delete hJson;
 		return;
 	}
 	
@@ -274,55 +293,96 @@ public void LoadItem(const char[] sItemName, const char[] sAttrs)
 	g_hAuraEffects.PushString(sInfo);						//effect name
 	g_iAuraCount++;
 	
-	//This way of doing this is really terrible
-	if (json_object_size(hJson) == 1)
+	Handle hIt = json_object_iter(hJson);
+	while (hIt != INVALID_HANDLE)
 	{
-		delete hJson;
-		return;
+		char sKey[128];
+		json_object_iter_key(hIt, sKey, sizeof(sKey));
+	
+		Handle hVal = json_object_iter_value(hIt);
+		
+		if (StrEqual(sKey, "file"))
+		{
+			if (!json_is_string(hVal))
+			{
+				LogError("JSON Error: 'file' attr was not a string!"); 
+			}
+			else
+			{
+				json_string_value(hVal, sInfo, sizeof(sInfo));
+				if (strlen(sInfo) != 0)
+				{
+					if (g_hParticleFiles.FindString(sInfo) == -1)
+					{
+						g_hParticleFiles.PushString(sInfo);					//file name
+						g_iFileCount++;
+					}
+				}
+			}
+		} 
+		else if (StrEqual(sKey, "material"))
+		{
+			if (!json_is_string(hVal))
+			{
+				LogError("JSON Error: 'material' attr was not a string!"); 
+			}
+			else
+			{
+				json_string_value(hVal, sInfo, sizeof(sInfo));
+				if (strlen(sInfo) != 0)
+				{
+					if (g_hMaterialFiles.FindString(sInfo) == -1)
+					{
+						g_hMaterialFiles.PushString(sInfo);				//file name
+						g_iMaterialCount++;
+					}
+				}
+			}
+		}
+		else if (StrEqual(sKey, "material2"))
+		{
+			if (!json_is_string(hVal))
+			{
+				LogError("JSON Error: 'material2' attr was not a string!"); 
+			}
+			else
+			{
+				json_string_value(hVal, sInfo, sizeof(sInfo));
+				if(strlen(sInfo) != 0)
+				{
+					if (g_hMaterialFiles.FindString(sInfo) == -1)
+					{
+						g_hMaterialFiles.PushString(sInfo);				//file name
+						g_iMaterialCount++;
+					}
+				}
+			}
+		}
+		else if (StrEqual(sKey, "model"))
+		{
+			if (!json_is_string(hVal))
+			{
+				LogError("JSON Error: 'model' attr was not a string!"); 
+			}
+			else
+			{
+				json_string_value(hVal, sInfo, sizeof(sInfo));
+				if(strlen(sInfo) != 0)
+				{
+					if (g_hModelFiles.FindString(sInfo) == -1)
+					{
+						g_hModelFiles.PushString(sInfo);				//file name
+						g_iModelCount++;
+					}
+				}
+			}
+		}
+		
+		delete hVal;
+		
+		hIt = json_object_iter_next(hJson, hIt);
 	}
 	
-	json_object_get_string(hJson, "file", sInfo, sizeof(sInfo));
-	if (strlen(sInfo) != 0)
-	{
-		if (g_hParticleFiles.FindString(sInfo) == -1)
-		{
-			g_hParticleFiles.PushString(sInfo);					//file name
-			g_iFileCount++;
-		}
-	}
-	
-	if (json_object_size(hJson) == 2)
-	{
-		delete hJson;
-		return;
-	}
-		
-	json_object_get_string(hJson, "material", sInfo, sizeof(sInfo));
-	if (strlen(sInfo) != 0)
-	{
-		if (g_hMaterialFiles.FindString(sInfo) == -1)
-		{
-			g_hMaterialFiles.PushString(sInfo);				//file name
-			g_iMaterialCount++;
-		}
-	}
-
-	if (json_object_size(hJson) == 3)
-	{
-		delete hJson;
-		return;
-	}
-		
-	json_object_get_string(hJson, "material2", sInfo, sizeof(sInfo));
-	if(strlen(sInfo) != 0)
-	{
-		if (g_hMaterialFiles.FindString(sInfo) == -1)
-		{
-			g_hMaterialFiles.PushString(sInfo);				//file name
-			g_iMaterialCount++;
-		}
-	}	
-
 	delete hJson;
 }
 
