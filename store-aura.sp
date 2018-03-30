@@ -1,7 +1,7 @@
 #pragma semicolon 1
 
 #define PLUGIN_AUTHOR "Lithium"
-#define PLUGIN_VERSION "1.6.0"
+#define PLUGIN_VERSION "1.6.1"
 
 #include <sourcemod>
 #include <sdktools>
@@ -200,6 +200,7 @@ public void OnMapStart()
 		char sBuffer[PLATFORM_MAX_PATH];
 		g_hModelFiles.GetString(i, sBuffer, sizeof(sBuffer));
 		AddFileToDownloadsTable(sBuffer);
+		PrecacheModel(sBuffer);
 		
 		ReplaceString(sBuffer, sizeof(sBuffer), ".mdl", ".vvd", false);
 		AddFileToDownloadsTable(sBuffer);
