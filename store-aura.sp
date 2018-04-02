@@ -1,7 +1,7 @@
 #pragma semicolon 1
 
 #define PLUGIN_AUTHOR "Lithium"
-#define PLUGIN_VERSION "1.6.1"
+#define PLUGIN_VERSION "1.6.3"
 
 #include <sourcemod>
 #include <sdktools>
@@ -46,6 +46,8 @@ ArrayList g_hAuraEffects;
 ArrayList g_hParticleFiles;
 ArrayList g_hMaterialFiles;
 ArrayList g_hModelFiles;
+
+bool g_bRestartMap = true;
 
 public Plugin myinfo = 
 {
@@ -169,7 +171,7 @@ public void OnClientPostAdminCheck(int iClient)
 	g_iEquippedEntityIndex[iClient] = -1;
 }
 
-public void OnMapStart()
+public void ProcessFiles()
 {
 	for (int i = 0; i < g_iFileCount; i++)
 	{
@@ -208,6 +210,11 @@ public void OnMapStart()
 		ReplaceString(sBuffer, sizeof(sBuffer), ".vvd", ".dx90.vtx", false);
 		AddFileToDownloadsTable(sBuffer);
 	}
+}
+
+public void OnMapStart()
+{
+	ProcessFiles();
 }
 
 public void Event_PlayerSpawn(Event hEvent, const char[] sName, bool bDontBroadcast)
@@ -270,6 +277,17 @@ public void Store_OnReloadItems()
 	g_iFileCount = 0;
 	g_iMaterialCount = 0;
 	g_iModelCount = 0;
+}
+
+public void Store_OnReloadItemsPost() 
+{
+	if (g_bRestartMap)
+	{
+		g_bRestartMap = false;
+		char sBuffer[PLATFORM_MAX_PATH];
+		GetCurrentMap(sBuffer, sizeof(sBuffer));
+		ForceChangeLevel(sBuffer, "Resetting map to fix aura downloads");
+	}
 }
 
 public void LoadItem(const char[] sItemName, const char[] sAttrs)
