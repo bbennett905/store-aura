@@ -1,7 +1,7 @@
 #pragma semicolon 1
 
 #define PLUGIN_AUTHOR "Lithium"
-#define PLUGIN_VERSION "1.6.3"
+#define PLUGIN_VERSION "1.6.4"
 
 #include <sourcemod>
 #include <sdktools>
@@ -18,17 +18,17 @@
 /*
  *	Auras have 1-5 json attributes. Format:
  *	--------------------------------------------------------
- * 	"effect":"effectname"						[REQUIRED]
- *			Name of the effect, within the specified pcf, to use.
+ *  "effect":"effectname"						[REQUIRED]
+ *  		Name of the effect, within the specified pcf, to use.
  *  "file":"particlesname.pcf"					[OPTIONAL]
- * 			Do not include the "particles/" in this path. Only necessary with custom effects.
- *	"material":"materials/materialpath.vmt"		[OPTIONAL] 
- *			ALWAYS include "materials/" in these paths. Also looks for the corresponding .vtf file.
- *	"material2":"materials/materialpath2.vmt"	[OPTIONAL]
- *			ALWAYS include "materials/" in these paths. Also looks for the corresponding .vtf file.
- *	"model":"models/modelpath.mdl"				[OPTIONAL]
- *			ALWAYS include "models/" in this path. 
- *			Also looks for the corresponding .vvd and .dx90.vtx files.
+ *  		Do not include the "particles/" in this path. Only necessary with custom effects.
+ *  "material":"materials/materialpath.vmt"		[OPTIONAL] 
+ *  		ALWAYS include "materials/" in these paths. Also looks for the corresponding .vtf file.
+ *  "material2":"materials/materialpath2.vmt"	[OPTIONAL]
+ *  		ALWAYS include "materials/" in these paths. Also looks for the corresponding .vtf file.
+ *  "model":"models/modelpath.mdl"				[OPTIONAL]
+ *  		ALWAYS include "models/" in this path. 
+ *  		Also looks for the corresponding .vvd and .dx90.vtx files.
  */
  
 ConVar g_hVisibleToTeamOnly;
@@ -202,7 +202,7 @@ public void ProcessFiles()
 		char sBuffer[PLATFORM_MAX_PATH];
 		g_hModelFiles.GetString(i, sBuffer, sizeof(sBuffer));
 		AddFileToDownloadsTable(sBuffer);
-		PrecacheModel(sBuffer);
+		PrecacheModel(sBuffer, true);
 		
 		ReplaceString(sBuffer, sizeof(sBuffer), ".mdl", ".vvd", false);
 		AddFileToDownloadsTable(sBuffer);
@@ -272,6 +272,9 @@ public void Store_OnReloadItems()
 	
 	if (g_hMaterialFiles != null) { delete g_hMaterialFiles; }
 	g_hMaterialFiles = new ArrayList(PLATFORM_MAX_PATH);
+	
+	if (g_hModelFiles != null) { delete g_hModelFiles; }
+	g_hModelFiles = new ArrayList(PLATFORM_MAX_PATH);
 	
 	g_iAuraCount = 0;
 	g_iFileCount = 0;
